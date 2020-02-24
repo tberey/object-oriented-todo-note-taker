@@ -1,0 +1,184 @@
+<!-- DESCRIPTION / NOTES / PLANNING:
+
+-------------------------------------------------------------------------------------------------
+
+An object-oriented approach, to a simple todo list/note taking browser app, written in JavaScript.
+See "README.md" for further information.
+
+There are  functions in this file.
+Function with the largest signature take  arguments, while the median is .
+Largest function has  statements in it, while the median is .
+The most complex function has a cyclomatic complexity value of , while the median is .
+
+
+============================================================================================
+
+Remote/Repo Name: https://github.com/tberey/object-oriented-todo-note-taker
+
+Branch Name: https://github.com/tberey/object-oriented-todo-note-taker/tree/master
+
+============================================================================================
+
+
+1) Export/Import to/from JSON document? Or XML, or text files? As a de-facto database.
+
+-->
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<!-- Set a Responsive scaled viewport, and assign Metadata. -->
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width,initial-scale=1">
+			<title>Project 3</title>
+		<meta name="author" content="Tom B">
+		<meta name="description" content="JavaScript Objects">
+        
+        <!-- Set in-page CSS styling. -->
+        <style type="text/css">
+            body {
+				display: flex;
+			}
+
+            button {
+                margin-top: 30px;
+                margin-left: 80%;
+                margin-bottom: 6px;
+            }
+
+            input {
+                width: 60%;
+                margin-bottom: 6px;
+                margin-left: 3px;
+            }
+
+            p, b {
+                margin-left: 3px;
+            }
+
+            sup {
+                float: right;
+                margin-right: 4px;
+            }
+
+            .inputForm {
+                flex: 1;
+                width: 50%;
+                margin-left: 2px;
+                margin-right: 2px;
+                background-color:rgb(106, 215, 223) ;
+                border: 3px solid rgb(19, 0, 128);
+            }
+
+            .outputForm {
+                flex: 1;
+                width: 50%;
+                margin-left: 2px;
+                background-color:rgb(101, 245, 214) ;
+                border: 3px solid rgb(19, 0, 128);
+            }
+		</style>
+	</head>
+    
+    <!-- Begin Main Body. -->
+	<body>
+        <div class="inputForm">
+            <b><u><h2>Create a New Note:</h2></u></b><hr>
+            1) Title: *<br><input type="text" id="title-input"><br>
+            2) Note: *<br><input type="text" id="body-input"><br>
+            3) Target Date/Time:<br><input type="datetime-local" id="target-input"><br>
+            <button id="new-entry" type="button">Create Note</button><br>
+        </div>
+        
+        <div class="outputForm">
+            <input type="button" value="Show All" onclick="showAll()">
+            <b><u><h2>Your Notes:</h2></u></b><hr>
+        </div>
+        
+        <!-- Begin Scripting. -->
+        <script type="text/javascript">
+            var fmtEntriesArray = [];
+            var entriesArray = [];
+            var entriesNumber = 0;
+
+            // Wait for page to be ready before init.
+            if (document.addEventListener) document.addEventListener("DOMContentLoaded", initialised, false);
+			else window.onload = initialised;
+
+            // Extrapolate form data, with set event listener. Init.
+            function initialised() {
+                document.getElementById('new-entry').addEventListener('click', () => {
+                    let formTitle = document.getElementById('title-input');
+                    let formBody = document.getElementById('body-input');
+                    let formTargetDate = document.getElementById('target-input');
+                    createEntry(formTitle, formBody, formTargetDate);
+                });
+            }
+
+            // Class constructor, to build properties for our entries, from passed data.
+			class Entry {
+                constructor(title, body, targDate) {
+                    entriesNumber+=1;
+                    this.ID = `N${entriesNumber}-${Math.abs(Math.floor((Math.random() * 99999999999) - (Math.random() * 2468013579)))}`;
+                    this.totalNotes = entriesNumber;
+                    this['Time & Date'] = `${('0' + ((new Date).getHours()+1)).slice(-2)}:${('0' + ((new Date).getMinutes()+1)).slice(-2)} - ${(new Date()).toDateString()}.`;
+                    this.Title = title;
+                    this.Body = body;
+                    this['Target Date'] = (targDate.indexOf('NaN') == -1) ? targDate : '[no target date & time set]';
+                    this.Done = false;
+                }
+            }
+
+            // Create our new note, by init each new entry (as an object), with the data extrapolated and passed through.
+            function createEntry(userTitle, userBody, userTargetDate) {
+                if (userTitle.value && userBody.value) {
+
+                    // Parse and format user's entered date.
+                    let fmtUsrTarDate = (new Date(userTargetDate.value));
+                    fmtUsrTarDate = (('0' + fmtUsrTarDate.getDate()).slice(-2) + '-' + ('0' + (fmtUsrTarDate.getMonth()+1)).slice(-2) + '-' + fmtUsrTarDate.getFullYear() + '; @ ' + ('0' + fmtUsrTarDate.getHours()).slice(-2) + ':' + ('0' + fmtUsrTarDate.getMinutes()).slice(-2));
+                    
+                    // Create new entry.
+                    let newEntry = new Entry(userTitle.value, userBody.value, fmtUsrTarDate);
+                    
+                    // Clear fields after successful submission
+                    userTitle.value = '';
+                    userBody.value = '';
+
+                    // Add to end of array(s).
+                    fmtEntriesArray.push(JSON.stringify(newEntry).replace(/(["/}/{])/g, '').replace(/([,])/g, '</br>').replace(/([:])/g, ': ')); // Array of string formatted entries (rather than objects).
+                    entriesArray.push(newEntry); // Array of entries, as objects.
+                    
+                    showEntry();
+
+                } else { // Error handling: Missing data, so no new entry object.
+                    alert('Please complete all fields!');
+                }
+            }
+
+            // Show the last entry added to our array. Build html of all submissions in current session.
+            function showEntry() {
+                document.querySelector('.outputForm').insertAdjacentHTML('beforeend',
+                    `<span class="entries">
+                    <i><sup>ID: ${entriesArray[entriesNumber-1].ID}</sup></i><br>
+                    <b>Time & Date Created: </b><p>${entriesArray[entriesNumber-1]['Time & Date']}</p>
+                    <b>TITLE: </b><p>${entriesArray[entriesNumber-1].Title}</p>
+                    <b>BODY: </b><p>${entriesArray[entriesNumber-1].Body}</p>
+                    <b>DUE: </b><p>${entriesArray[entriesNumber-1]['Target Date']}</p>
+                    </span><hr>`
+                );
+            }
+            
+            function showAll() { // Testing
+                //export {entriesArray};
+                window.open('second-page.html');
+                /*for (let i = 0; i < entriesArray.length; i++) {
+                    document.querySelector('.outputForm').insertAdjacentHTML('beforeend',
+                        `<span class="entries">
+                        <p>${entriesArray[i]}</p>
+                        </span><hr>`
+                    );
+                }*/
+            }
+		</script>
+	</body>
+</html>
