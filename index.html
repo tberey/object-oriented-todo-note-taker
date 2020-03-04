@@ -1,26 +1,31 @@
 <!-- DESCRIPTION / NOTES / PLANNING:
 
--------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------
+SPA (Single Page Application):
 
 An object-oriented approach, to a simple todo list/note taking browser app, written in JavaScript.
 See "README.md" for further information.
 
-There are  functions in this file.
-Function with the largest signature take  arguments, while the median is .
-Largest function has  statements in it, while the median is .
-The most complex function has a cyclomatic complexity value of , while the median is .
+----------------------------------------------------------------------------------------------------------
+
+There are 11 functions in this file.
+Function with the largest signature take 4 arguments, while the median is 0.
+Largest function has 10 statements in it, while the median is 5.
+The most complex function has a cyclomatic complexity value of 5, while the median is 2.
 
 
-============================================================================================
+=========================================================================================================
 
 Remote/Repo Name: https://github.com/tberey/object-oriented-todo-note-taker
 
 Branch Name: https://github.com/tberey/object-oriented-todo-note-taker/tree/master
 
-============================================================================================
+=========================================================================================================
 
 
 1) Export/Import to/from JSON document? Or XML, or text files? As a de-facto database.
+
+2) Update Entry Method: Consider turning into a setter method for object constructor.
 
 -->
 
@@ -82,6 +87,7 @@ Branch Name: https://github.com/tberey/object-oriented-todo-note-taker/tree/mast
     
     <!-- Begin Main Body. -->
 	<body>
+        <!-- Left hand side input form DOM. -->
         <div class="inputForm">
             <b><u><h2>Create a New Note:</h2></u></b><hr>
             1) Title: *<br><input type="text" id="title-input"><br>
@@ -90,14 +96,21 @@ Branch Name: https://github.com/tberey/object-oriented-todo-note-taker/tree/mast
             <button id="new-entry" type="button">Create Note</button><br>
         </div>
         
+        <!-- Right hand side output form buttons/DOM. -->
         <div class="outputForm">
-            <input type="button" value="Show All" onclick="showAll()">
+            <input style="width:15.5%;" type="button" value="Show All" onclick="showAll()">
+            <input style="width:19%;" type="button" value="Show Entry" onclick="showEntry()">
+            <input style="width:20.5%;" type="button" value="Update Entry" id="update-entry">
+            <input style="width:20%;" type="button" value="Delete Entry" onclick="deleteEntry()">
+            <input style="width:16.5%;" type="button" value="Delete All" onclick="deleteAll()">
+            <br>ID:<input type="text" id="id-input">
             <b><u><h2>Your Notes:</h2></u></b><hr>
+            <p id="notesOutput"></p>
         </div>
         
         <!-- Begin Scripting. -->
         <script type="text/javascript">
-            var fmtEntriesArray = [];
+            // Global Space. Full scope needed.
             var entriesArray = [];
             var entriesNumber = 0;
 
@@ -105,13 +118,21 @@ Branch Name: https://github.com/tberey/object-oriented-todo-note-taker/tree/mast
             if (document.addEventListener) document.addEventListener("DOMContentLoaded", initialised, false);
 			else window.onload = initialised;
 
-            // Extrapolate form data, with set event listener. Init.
+            // Extrapolate form data, and set event listeners for creating a new entry and updating exisiting entry. Init.
             function initialised() {
                 document.getElementById('new-entry').addEventListener('click', () => {
                     let formTitle = document.getElementById('title-input');
                     let formBody = document.getElementById('body-input');
                     let formTargetDate = document.getElementById('target-input');
                     createEntry(formTitle, formBody, formTargetDate);
+                });
+
+                document.getElementById('update-entry').addEventListener('click', () => {
+                    let formTitle = document.getElementById('title-input');
+                    let formBody = document.getElementById('body-input');
+                    let formTargetDate = document.getElementById('target-input');
+                    let formID = document.getElementById('id-input');
+                    updateEntry(formTitle, formBody, formTargetDate, formID);
                 });
             }
 
@@ -138,46 +159,129 @@ Branch Name: https://github.com/tberey/object-oriented-todo-note-taker/tree/mast
                     fmtUsrTarDate = (('0' + fmtUsrTarDate.getDate()).slice(-2) + '-' + ('0' + (fmtUsrTarDate.getMonth()+1)).slice(-2) + '-' + fmtUsrTarDate.getFullYear() + '; @ ' + ('0' + fmtUsrTarDate.getHours()).slice(-2) + ':' + ('0' + fmtUsrTarDate.getMinutes()).slice(-2));
                     
                     // Create new entry.
-                    let newEntry = new Entry(userTitle.value, userBody.value, fmtUsrTarDate);
+                    let newEntryItem = new Entry(userTitle.value, userBody.value, fmtUsrTarDate);
                     
                     // Clear fields after successful submission
                     userTitle.value = '';
                     userBody.value = '';
 
-                    // Add to end of array(s).
-                    fmtEntriesArray.push(JSON.stringify(newEntry).replace(/(["/}/{])/g, '').replace(/([,])/g, '</br>').replace(/([:])/g, ': ')); // Array of string formatted entries (rather than objects).
-                    entriesArray.push(newEntry); // Array of entries, as objects.
+                    // Append new note to end of array.
+                    entriesArray.push(newEntryItem); // Array of entries, as objects.
                     
-                    showEntry();
+                    newEntry();
 
                 } else { // Error handling: Missing data, so no new entry object.
                     alert('Please complete all fields!');
                 }
             }
 
-            // Show the last entry added to our array. Build html of all submissions in current session.
-            function showEntry() {
-                document.querySelector('.outputForm').insertAdjacentHTML('beforeend',
-                    `<span class="entries">
-                    <i><sup>ID: ${entriesArray[entriesNumber-1].ID}</sup></i><br>
-                    <b>Time & Date Created: </b><p>${entriesArray[entriesNumber-1]['Time & Date']}</p>
-                    <b>TITLE: </b><p>${entriesArray[entriesNumber-1].Title}</p>
-                    <b>BODY: </b><p>${entriesArray[entriesNumber-1].Body}</p>
-                    <b>DUE: </b><p>${entriesArray[entriesNumber-1]['Target Date']}</p>
-                    </span><hr>`
-                );
-            }
-            
-            function showAll() { // Testing
-                //export {entriesArray};
-                window.open('second-page.html');
-                /*for (let i = 0; i < entriesArray.length; i++) {
-                    document.querySelector('.outputForm').insertAdjacentHTML('beforeend',
+            // Show the last entry added to our array.
+            function newEntry() {
+                document.querySelector('#notesOutput').innerHTML = '';
+
+                if (entriesArray.length) {
+                    // Append new entry into HTML DOM output.
+                    document.querySelector('#notesOutput').insertAdjacentHTML('beforeend',
                         `<span class="entries">
-                        <p>${entriesArray[i]}</p>
+                        <i><sup>ID: ${entriesArray[entriesArray.length-1].ID}</sup></i><br>
+                        <b>Time & Date Created: </b><p>${entriesArray[entriesArray.length-1]['Time & Date']}</p>
+                        <b>TITLE: </b><p>${entriesArray[entriesArray.length-1].Title}</p>
+                        <b>BODY: </b><p>${entriesArray[entriesArray.length-1].Body}</p>
+                        <b>DUE: </b><p>${entriesArray[entriesArray.length-1]['Target Date']}</p>
                         </span><hr>`
                     );
-                }*/
+                }
+            }
+            
+            // Show all the entries currently in our array.
+            function showAll() {
+                document.querySelector('#notesOutput').innerHTML = '';
+                for (let i = 0; i < entriesArray.length; i++) {
+                    // Append all entries into HTML DOM output.
+                    document.querySelector('#notesOutput').insertAdjacentHTML('beforeend',
+                        `<span class="entries">
+                        <i><sup>ID: ${entriesArray[i].ID}</sup></i><br>
+                        <b>Time & Date Created: </b><p>${entriesArray[i]['Time & Date']}</p>
+                        <b>TITLE: </b><p>${entriesArray[i].Title}</p>
+                        <b>BODY: </b><p>${entriesArray[i].Body}</p>
+                        <b>DUE: </b><p>${entriesArray[i]['Target Date']}</p>
+                        </span><hr>`
+                    );
+                }
+            }
+
+            // Show a single specified entry from our current array.
+            function showEntry() {
+                document.querySelector('#notesOutput').innerHTML = '';
+                let id = document.querySelector('#id-input').value;
+                if (id) {
+                    for (let i = 0; i < entriesArray.length; i++) {
+                        if (id == entriesArray[i].ID) {
+                            document.querySelector('#notesOutput').insertAdjacentHTML('beforeend',
+                                `<span class="entries">
+                                <i><sup>ID: ${entriesArray[i].ID}</sup></i><br>
+                                <b>Time & Date Created: </b><p>${entriesArray[i]['Time & Date']}</p>
+                                <b>TITLE: </b><p>${entriesArray[i].Title}</p>
+                                <b>BODY: </b><p>${entriesArray[i].Body}</p>
+                                <b>DUE: </b><p>${entriesArray[i]['Target Date']}</p>
+                                </span><hr>`
+                            );
+                        } else {alert('Entry not found! Cannot FIND.');}
+                    }
+                } else {document.querySelector('#notesOutput').innerHTML = 'Please enter an ID to search for.';}
+                id = document.querySelector('#id-input').value = '';
+            }
+
+            // Update existing entry, with any new details inputted by the user, queried by id.
+            function updateEntry(title, body, targDate, entryID) {
+                document.querySelector('#notesOutput').innerHTML = '';
+                console.log(targDate.value);
+                if (entryID.value) {
+                    for (let i = 0; i < entriesArray.length; i++) {
+                        if (entryID.value == entriesArray[i].ID) {
+                            document.querySelector('#notesOutput').insertAdjacentHTML('beforeend',
+                                `<span class="entries">
+                                <i><sup>ID: ${entriesArray[i].ID}</sup></i><br>
+                                <b>Time & Date Created: </b><p>${entriesArray[i]['Time & Date']}</p>
+                                <b>TITLE: </b><p>${entriesArray[i].Title = title.value}</p>
+                                <b>BODY: </b><p>${entriesArray[i].Body = body.value}</p>
+                                <b>DUE: </b><p>${entriesArray[i]['Target Date'] = targDate.value || entriesArray[i]['Target Date']}</p>
+                                </span><hr>`
+                            );
+                        } else {alert('Entry not found! Cannot UPDATE.');}
+                    }
+                } else {document.querySelector('#notesOutput').innerHTML = 'Please enter an ID entry to update.';}
+                entryID.value = '';
+            }
+
+            // Delete all the entries currently in our array.
+            function deleteAll() {
+                document.querySelector('#notesOutput').innerHTML = '';
+                entriesArray = [];
+            }
+
+            // Delete a single specified entry from our current array.
+            function deleteEntry() {
+                document.querySelector('#notesOutput').innerHTML = '';
+                let id = document.querySelector('#id-input').value;
+                if (id) {
+                    for (let i = 0; i < entriesArray.length; i++) {
+                        if (id == entriesArray[i].ID) {
+                            entriesArray.splice(i,1);
+                        } else {alert('Entry not found! Cannot DELETE.');}
+
+                        document.querySelector('#notesOutput').insertAdjacentHTML('beforeend',
+                            `<span class="entries">
+                            <i><sup>ID: ${entriesArray[i].ID}</sup></i><br>
+                            <b>Time & Date Created: </b><p>${entriesArray[i]['Time & Date']}</p>
+                            <b>TITLE: </b><p>${entriesArray[i].Title}</p>
+                            <b>BODY: </b><p>${entriesArray[i].Body}</p>
+                            <b>DUE: </b><p>${entriesArray[i]['Target Date']}</p>
+                            </span><hr>`
+                        );
+                    }
+                } else {document.querySelector('#notesOutput').innerHTML = 'Please enter an ID to delete.';}
+                id = document.querySelector('#id-input').value = '';
             }
 		</script>
 	</body>
